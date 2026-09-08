@@ -448,9 +448,12 @@ async function agregarUsuarioAcceso() {
     return;
   }
 
-  const { error } = await supabaseClient
+  const payload = construirPayloadUsuarioAcceso(datos);
+  const { data, error } = await supabaseClient
     .from('MD:Usuarios')
-    .insert(construirPayloadUsuarioAcceso(datos));
+    .insert(payload)
+    .select(CONTROL_ACCESOS_SELECT)
+    .maybeSingle();
 
   if (error) {
     setControlAccesosStatus('Error al agregar usuario: ' + error.message);
@@ -459,6 +462,17 @@ async function agregarUsuarioAcceso() {
 
   limpiarFormularioNuevoAcceso();
   await cargarUsuariosAcceso();
+  if (typeof registrarLogControl === 'function') {
+    await registrarLogControl({
+      modulo: 'Control de Accesos',
+      accion: 'ALTA',
+      tabla: 'MD:Usuarios',
+      registroId: data?.id || datos.usuario,
+      descripcion: `Alta de usuario ${datos.usuario}`,
+      antes: null,
+      despues: sanitizarUsuarioAccesoParaLog(data || payload)
+    });
+  }
   setControlAccesosStatus('Usuario agregado correctamente.');
   mostrarPopupGuardado('Usuario agregado correctamente.');
 }
@@ -509,6 +523,17 @@ async function guardarUsuarioAcceso(index) {
   controlAccesosRows[index] = data;
   renderUsuariosAcceso();
   sincronizarSesionUsuarioActual(data);
+  if (typeof registrarLogControl === 'function') {
+    await registrarLogControl({
+      modulo: 'Control de Accesos',
+      accion: 'EDICION',
+      tabla: 'MD:Usuarios',
+      registroId: row.id,
+      descripcion: `Actualizacion de usuario ${row.User_Nombre}`,
+      antes: sanitizarUsuarioAccesoParaLog(row),
+      despues: sanitizarUsuarioAccesoParaLog(data)
+    });
+  }
 
   setControlAccesosStatus('Usuario actualizado correctamente.');
   mostrarPopupGuardado('Usuario actualizado correctamente.');
@@ -537,10 +562,12 @@ async function eliminarUsuarioAcceso(index) {
     return;
   }
 
-  const { error } = await supabaseClient
+  const { data, error } = await supabaseClient
     .from('MD:Usuarios')
     .delete()
-    .eq('id', row.id);
+    .eq('id', row.id)
+    .select(CONTROL_ACCESOS_SELECT)
+    .maybeSingle();
 
   if (error) {
     setControlAccesosStatus('Error al eliminar usuario: ' + error.message);
@@ -548,5 +575,26 @@ async function eliminarUsuarioAcceso(index) {
   }
 
   await cargarUsuariosAcceso();
+  if (typeof registrarLogControl === 'function') {
+    await registrarLogControl({
+      modulo: 'Control de Accesos',
+      accion: 'ELIMINACION',
+      tabla: 'MD:Usuarios',
+      registroId: row.id,
+      descripcion: `Eliminacion de usuario ${row.User_Nombre}`,
+      antes: sanitizarUsuarioAccesoParaLog(data || row),
+      despues: null
+    });
+  }
   setControlAccesosStatus('Usuario eliminado correctamente.');
+}
+
+function sanitizarUsuarioAccesoParaLog(row) {
+  if (!row) return null;
+
+  const copia = { ...row };
+  delete copia.User_Password;
+  delete copia.Password;
+  delete copia.password;
+  return copia;
 }

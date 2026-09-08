@@ -17,7 +17,8 @@ let nuevoCodigoState = {
   claveTipo: '',
   materialNombre: '',
   idMaterial: '',
-  nomenclaturaMaterial: ''
+  nomenclaturaMaterial: '',
+  usarNomenclaturaMaterial: false
 };
 
 let nuevoCodigoRelaciones = {
@@ -101,113 +102,133 @@ function renderNuevoCodigo(opciones = {}) {
   viewer.innerHTML = `
     <div class="nuevo-codigo-view">
       <div class="nuevo-codigo-header">
-        <h2>${titulo}</h2>
-        ${descripcion ? `<p>${descripcion}</p>` : ''}
-      </div>
-
-      <div class="nuevo-codigo-form">
-        <div class="field-block">
-          <label for="nuevoCodigoGrupo">Grupo</label>
-          <select id="nuevoCodigoGrupo" onchange="onNuevoCodigoGrupoChange()">
-            <option value="">Selecciona un grupo</option>
-          </select>
-        </div>
-
-        <div class="field-block">
-          <label for="nuevoCodigoFamilia">Familia</label>
-          <select id="nuevoCodigoFamilia" onchange="onNuevoCodigoFamiliaChange()" disabled>
-            <option value="">Selecciona una familia</option>
-          </select>
-        </div>
-
-        <div class="field-block">
-          <label for="nuevoCodigoTipo">Tipo</label>
-          <select id="nuevoCodigoTipo" onchange="onNuevoCodigoTipoChange()" disabled>
-            <option value="">Selecciona un tipo</option>
-          </select>
-        </div>
-
-        <div class="field-block" id="nuevoCodigoMaterialBlock" style="display:none;">
-          <label for="nuevoCodigoMaterial">Material</label>
-          <select id="nuevoCodigoMaterial" onchange="onNuevoCodigoMaterialChange()" disabled>
-            <option value="">Selecciona un material</option>
-          </select>
-        </div>
-
-        <div class="field-block consecutivo-block">
-          <label for="nuevoCodigoConsecutivo">Consecutivo</label>
-          <input id="nuevoCodigoConsecutivo" type="text" value="Automatico" disabled>
+        <div>
+          <h2>${titulo}</h2>
+          ${descripcion ? `<p>${descripcion}</p>` : ''}
         </div>
       </div>
 
-      <div class="field-block descripcion-block">
-        <label for="nuevoCodigoDescripcionVieja">Descripcion</label>
-        <input
-          id="nuevoCodigoDescripcionVieja"
-          type="text"
-          placeholder="Escribe la descripcion base del articulo"
-          oninput="onNuevoCodigoDescripcionChange()"
-        >
-      </div>
+      <section class="nuevo-codigo-card">
+        <div class="nuevo-codigo-form">
+          <div class="field-block">
+            <label for="nuevoCodigoGrupo">Grupo</label>
+            <select id="nuevoCodigoGrupo" onchange="onNuevoCodigoGrupoChange()">
+              <option value="">Selecciona un grupo</option>
+            </select>
+          </div>
 
-      <div class="nuevo-codigo-actions">
-        <button id="btnNuevoCodigoPrincipal" onclick="accionPrincipalNuevoCodigo()"></button>
+          <div class="field-block">
+            <label for="nuevoCodigoFamilia">Familia</label>
+            <select id="nuevoCodigoFamilia" onchange="onNuevoCodigoFamiliaChange()" disabled>
+              <option value="">Selecciona una familia</option>
+            </select>
+          </div>
 
-        ${nuevoCodigoModoSimulador ? '' : `
-          <button onclick="guardarNuevoCodigoMateriaPrima()">
-            Guardar
-          </button>
-        `}
+          <div class="field-block">
+            <label for="nuevoCodigoTipo">Tipo</label>
+            <select id="nuevoCodigoTipo" onchange="onNuevoCodigoTipoChange()" disabled>
+              <option value="">Selecciona un tipo</option>
+            </select>
+          </div>
 
-        <button onclick="limpiarNuevoCodigo()">
-          Limpiar
-        </button>
-      </div>
+          <div class="field-block" id="nuevoCodigoMaterialBlock" style="display:none;">
+            <label for="nuevoCodigoMaterial">Material</label>
+            <select id="nuevoCodigoMaterial" onchange="onNuevoCodigoMaterialChange()" disabled>
+              <option value="">Selecciona un material</option>
+            </select>
+          </div>
 
-      <div class="codigo-generado-panel">
-        <div class="panel-label">CODIGO GENERADO</div>
-
-        <div id="nuevoCodigoGenerado" class="codigo-generado-value">
-          -
+          <div class="field-block consecutivo-block">
+            <label for="nuevoCodigoConsecutivo">Consecutivo</label>
+            <input id="nuevoCodigoConsecutivo" type="text" value="Automatico" disabled>
+          </div>
         </div>
 
-        <div id="nuevoCodigoStatus" class="status-box">
-          Selecciona un grupo para continuar.
-        </div>
-      </div>
-
-      <div class="vista-previa-panel">
-        <h3>Vista previa final</h3>
-
-        <div class="preview-row">
-          <strong>Descripcion:</strong>
-          <span id="previewDescripcionVieja">-</span>
-        </div>
-
-        <div class="preview-row">
-          <strong>Descripcion nueva:</strong>
-          <span id="previewDescripcionNueva">-</span>
-        </div>
-
-        <div class="preview-row">
-          <strong>Codigo nuevo:</strong>
-          <span id="previewCodigoNuevo">-</span>
-        </div>
-
-        ${nuevoCodigoModoSimulador ? '' : `
-          <div class="preview-row">
-            <label for="nuevoCodigoPixvs">
-              <strong>Codigo Pixvs:</strong>
-            </label>
+        <div class="nuevo-codigo-bottom-row">
+          <div class="field-block descripcion-block">
+            <label for="nuevoCodigoDescripcionVieja">Descripcion</label>
             <input
-              id="nuevoCodigoPixvs"
-              class="preview-input"
+              id="nuevoCodigoDescripcionVieja"
               type="text"
-              placeholder="Opcional"
-              disabled
+              placeholder="Escribe la descripcion base del articulo"
+              oninput="onNuevoCodigoDescripcionChange()"
             >
           </div>
-        `}
+
+          <div class="nuevo-codigo-actions">
+            <button id="btnNuevoCodigoPrincipal" onclick="accionPrincipalNuevoCodigo()"></button>
+
+            ${nuevoCodigoModoSimulador ? '' : `
+              <button onclick="guardarNuevoCodigoMateriaPrima()">
+                Guardar
+              </button>
+            `}
+
+            <button class="button-light" onclick="limpiarNuevoCodigo()">
+              Limpiar
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <div class="nuevo-codigo-output-grid">
+        <div class="codigo-generado-panel">
+          <div class="panel-label">CODIGO GENERADO</div>
+
+          <div id="nuevoCodigoGenerado" class="codigo-generado-value">
+            -
+          </div>
+
+          <div id="nuevoCodigoStatus" class="status-box">
+            Selecciona un grupo para continuar.
+          </div>
+        </div>
+
+        <div class="vista-previa-panel">
+          <h3>Vista previa final</h3>
+
+          <div class="preview-row">
+            <strong>Descripcion:</strong>
+            <span id="previewDescripcionVieja">-</span>
+          </div>
+
+          <label id="previewNomenclaturaMaterialRow" class="preview-check-row" hidden>
+            <input
+              id="previewUsarNomenclaturaMaterial"
+              type="checkbox"
+              onchange="onNuevoCodigoNomenclaturaChecklistChange(this.checked)"
+            >
+            <span>
+              Agregar nomenclatura del material
+              <strong id="previewNomenclaturaMaterialTexto"></strong>
+            </span>
+          </label>
+
+          <div class="preview-row">
+            <strong>Descripcion nueva:</strong>
+            <span id="previewDescripcionNueva">-</span>
+          </div>
+
+          <div class="preview-row">
+            <strong>Codigo nuevo:</strong>
+            <span id="previewCodigoNuevo">-</span>
+          </div>
+
+          ${nuevoCodigoModoSimulador ? '' : `
+            <div class="preview-row">
+              <label for="nuevoCodigoPixvs">
+                <strong>Codigo Pixvs:</strong>
+              </label>
+              <input
+                id="nuevoCodigoPixvs"
+                class="preview-input"
+                type="text"
+                placeholder="Opcional"
+                disabled
+              >
+            </div>
+          `}
+        </div>
       </div>
     </div>
   `;
@@ -845,25 +866,40 @@ async function guardarNuevoCodigoMateriaPrima() {
 
   const responsable = obtenerNombreUsuarioVisible();
 
-  const { error } = await supabaseClient
+  const payload = {
+    [COLUMNA_CODIGO_PIXVS]: codigoPixvs,
+    [COLUMNA_DESCRIPCION_1]: descripcion,
+    [COLUMNA_CODIGO]: codigoNuevo,
+    [COLUMNA_DESCRIPCION_2]: construirDescripcionSAPNuevoCodigo(descripcion),
+    'Version SAP': '01',
+    'Revision SAP': '01',
+    'Status': '2 - Local',
+    [COLUMNA_FECHA_CAMBIO]: new Date().toISOString(),
+    'Responsable': responsable
+  };
+
+  const { data, error } = await supabaseClient
     .from(TABLA_CODIGOS)
-    .insert([
-      {
-        [COLUMNA_CODIGO_PIXVS]: codigoPixvs,
-        [COLUMNA_DESCRIPCION_1]: descripcion,
-        [COLUMNA_CODIGO]: codigoNuevo,
-        [COLUMNA_DESCRIPCION_2]: construirDescripcionSAPNuevoCodigo(descripcion),
-        'Version SAP': '01',
-        'Revision SAP': '01',
-        'Status': '2 - Local',
-        [COLUMNA_FECHA_CAMBIO]: new Date().toISOString(),
-        'Responsable': responsable
-      }
-    ]);
+    .insert([payload])
+    .select('"Id","Codigo Pixvs","Nombre Pixvs","Codigo SAP","Nombre SAP","Version SAP","Revision SAP","Status","Fecha de ultimo Cambio","Responsable"')
+    .maybeSingle();
 
   if (error) {
     setNuevoCodigoStatus('Error al guardar: ' + error.message);
     return;
+  }
+
+  if (typeof registrarLogControl === 'function') {
+    await registrarLogControl({
+      modulo: 'Nuevo Codigo',
+      accion: 'ALTA',
+      tabla: TABLA_CODIGOS,
+      registroId: data?.Id || codigoNuevo,
+      codigoSap: codigoNuevo,
+      descripcion: 'Alta de codigo desde Nuevo Codigo',
+      antes: null,
+      despues: data || payload
+    });
   }
 
   setNuevoCodigoStatus('Se genero correctamente.');
@@ -881,7 +917,7 @@ function construirDescripcionSAPNuevoCodigo(descripcion) {
 
   const nomenclatura = String(nuevoCodigoState.nomenclaturaMaterial || '').trim();
 
-  if (!nomenclatura) {
+  if (!nomenclatura || !nuevoCodigoState.usarNomenclaturaMaterial) {
     return descripcionBase;
   }
 
@@ -937,9 +973,32 @@ function prepararVistaPreviaNuevoCodigo() {
   document.getElementById('previewCodigoNuevo').textContent =
     codigoGenerado || '-';
 
+  actualizarChecklistNomenclaturaMaterialNuevoCodigo(codigoGenerado);
+
   if (codigoPixvsInput) {
     codigoPixvsInput.disabled = !codigoGenerado || codigoGenerado === '-';
   }
+}
+
+function actualizarChecklistNomenclaturaMaterialNuevoCodigo(codigoGenerado = '') {
+  const row = document.getElementById('previewNomenclaturaMaterialRow');
+  const checkbox = document.getElementById('previewUsarNomenclaturaMaterial');
+  const texto = document.getElementById('previewNomenclaturaMaterialTexto');
+  const nomenclatura = String(nuevoCodigoState.nomenclaturaMaterial || '').trim();
+  const codigoValido = Boolean(codigoGenerado && codigoGenerado !== '-');
+  const mostrar = !esGrupoPTNuevoCodigo() && Boolean(nomenclatura) && codigoValido;
+
+  if (!row || !checkbox || !texto) return;
+
+  row.hidden = !mostrar;
+  checkbox.checked = Boolean(nuevoCodigoState.usarNomenclaturaMaterial);
+  checkbox.disabled = !mostrar;
+  texto.textContent = mostrar ? `(${nomenclatura})` : '';
+}
+
+function onNuevoCodigoNomenclaturaChecklistChange(checked) {
+  nuevoCodigoState.usarNomenclaturaMaterial = Boolean(checked);
+  prepararVistaPreviaNuevoCodigo();
 }
 
 /*************************************************
@@ -957,7 +1016,8 @@ function limpiarNuevoCodigo() {
     claveTipo: '',
     materialNombre: '',
     idMaterial: '',
-    nomenclaturaMaterial: ''
+    nomenclaturaMaterial: '',
+    usarNomenclaturaMaterial: false
   };
 
   const grupoSelect = document.getElementById('nuevoCodigoGrupo');
@@ -1023,6 +1083,8 @@ function limpiarVistaPreviaNuevoCodigo() {
     codigoPixvsInput.value = '';
     codigoPixvsInput.disabled = true;
   }
+
+  actualizarChecklistNomenclaturaMaterialNuevoCodigo('-');
 }
 
 /*************************************************
@@ -1270,6 +1332,7 @@ function onNuevoCodigoMaterialChange() {
   nuevoCodigoState.idMaterial = selectedOption.dataset.idMaterial || '';
   nuevoCodigoState.nomenclaturaMaterial =
     selectedOption.dataset.nomenclaturaMaterial || '';
+  nuevoCodigoState.usarNomenclaturaMaterial = false;
 
   actualizarBotonPrincipalNuevoCodigo();
 
@@ -1291,6 +1354,7 @@ function limpiarMaterialesNuevoCodigo() {
   nuevoCodigoState.materialNombre = '';
   nuevoCodigoState.idMaterial = '';
   nuevoCodigoState.nomenclaturaMaterial = '';
+  nuevoCodigoState.usarNomenclaturaMaterial = false;
 
   if (materialSelect) {
     materialSelect.innerHTML = `<option value="">Selecciona un material</option>`;

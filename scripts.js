@@ -8,7 +8,9 @@ const supabaseClient = supabase.createClient(
 );
 
 let dashboardCharts = [];
+let buscadorResultadosRows = [];
 const DASHBOARD_GRUPOS_OCULTOS = new Set(['I']);
+const PREFIJOS_CODIGO_SAP_PT = new Set(['A', 'V', 'E', 'T', 'P', 'G', 'X', 'Q', 'N']);
 
 // Grupos visibles del dashboard; el conteo se calcula con la primera letra de Codigo SAP.
 const DASHBOARD_GRUPOS_BASE = [
@@ -169,7 +171,7 @@ function renderDashboardInicio() {
       <div class="dashboard-hero">
         <div>
           <h2>Bienvenido, ${escapeHtml(nombreUsuario)}</h2>
-          <p>Resumen general del sistema</p>
+          <p>Vista de trabajo para solicitudes, codigos y catalogos.</p>
         </div>
 
         <button
@@ -182,14 +184,32 @@ function renderDashboardInicio() {
         </button>
       </div>
 
-      <div class="dashboard-kpi-grid">
-        ${renderDashboardKpiCard('Solicitudes nuevas', '-', 'dashboardKpiNuevas')}
-        ${renderDashboardKpiCard('Codigos hoy', '-', 'dashboardKpiCodigosHoy')}
-        ${renderDashboardKpiCard('Codigos esta semana', '-', 'dashboardKpiCodigosSemana')}
-        ${renderDashboardKpiCard('Solicitudes pendientes', '-', 'dashboardKpiPendientes')}
+      <div class="dashboard-quick-actions">
+        ${renderDashboardQuickAction('Buscar articulo', 'Consulta codigos SAP/Pixvs', 'buscador')}
+        ${renderDashboardQuickAction('Nuevo codigo', 'Genera claves nuevas', 'nuevoCodigo')}
+        ${renderDashboardQuickAction('Solicitudes', 'Revisa pendientes y liberadas', 'solicitudes')}
+        ${renderDashboardQuickAction('Panel de control', 'Administra datos del sistema', 'panelControl')}
       </div>
 
-      <div class="dashboard-charts-grid">
+      <div class="dashboard-kpi-grid">
+        ${renderDashboardKpiCard('Solicitudes nuevas', '-', 'dashboardKpiNuevas', 'Sin revisar')}
+        ${renderDashboardKpiCard('Codigos hoy', '-', 'dashboardKpiCodigosHoy', 'Altas o cambios de hoy')}
+        ${renderDashboardKpiCard('Codigos esta semana', '-', 'dashboardKpiCodigosSemana', 'Actividad semanal')}
+        ${renderDashboardKpiCard('Solicitudes pendientes', '-', 'dashboardKpiPendientes', 'En seguimiento')}
+      </div>
+
+      <div class="dashboard-main-grid">
+        <section class="dashboard-panel dashboard-focus-panel">
+          <div class="dashboard-panel-header">
+            <h3>Enfoque del dia</h3>
+            <span>Resumen activo</span>
+          </div>
+
+          <div id="dashboardFocusList" class="dashboard-focus-list">
+            <p class="dashboard-chart-fallback">Cargando prioridades...</p>
+          </div>
+        </section>
+
         <section class="dashboard-panel dashboard-panel-wide">
           <div class="dashboard-panel-header">
             <h3>Codigos por grupo</h3>
@@ -200,54 +220,55 @@ function renderDashboardInicio() {
           </div>
         </section>
 
-        <section class="dashboard-panel">
+        <section class="dashboard-panel dashboard-recent-panel">
           <div class="dashboard-panel-header">
-            <h3>Distribucion por grupo</h3>
-            <span id="dashboardCodigosGrupoDonaTotal">Total: 0</span>
+            <h3>Ultimas solicitudes</h3>
+            <span id="dashboardUltimasSolicitudesTotal">Recientes</span>
           </div>
-          <div class="dashboard-chart-box">
-            <canvas id="dashboardCodigosGrupoDonaChart"></canvas>
-            <p id="dashboardCodigosGrupoDonaFallback" class="dashboard-chart-fallback"></p>
+
+          <div class="table-scroll dashboard-table-scroll">
+            <table class="catalog-table dashboard-table">
+              <thead>
+                <tr>
+                  <th>Fecha</th>
+                  <th>Solicitante</th>
+                  <th>Descripcion</th>
+                  <th>Estado</th>
+                  <th>Accion</th>
+                </tr>
+              </thead>
+              <tbody id="dashboardUltimasSolicitudes">
+                <tr>
+                  <td colspan="5">Cargando informacion...</td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </section>
-
       </div>
-
-      <section class="dashboard-panel">
-        <div class="dashboard-panel-header">
-          <h3>Ultimas solicitudes</h3>
-        </div>
-
-        <div class="table-scroll dashboard-table-scroll">
-          <table class="catalog-table dashboard-table">
-            <thead>
-              <tr>
-                <th>Fecha</th>
-                <th>Solicitante</th>
-                <th>Descripcion</th>
-                <th>Estado</th>
-                <th>Accion</th>
-              </tr>
-            </thead>
-            <tbody id="dashboardUltimasSolicitudes">
-              <tr>
-                <td colspan="5">Cargando informacion...</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
     </div>
   `;
 
   cargarDashboardInicio();
 }
 
-function renderDashboardKpiCard(titulo, valor, id) {
+function renderDashboardQuickAction(titulo, descripcion, section) {
+  if (!puedeAccederSeccion(section)) return '';
+
+  return `
+    <button type="button" class="dashboard-quick-action" onclick="showSection('${section}')">
+      <strong>${escapeHtml(titulo)}</strong>
+      <span>${escapeHtml(descripcion)}</span>
+    </button>
+  `;
+}
+
+function renderDashboardKpiCard(titulo, valor, id, descripcion = '') {
   return `
     <article class="dashboard-kpi-card">
       <span>${escapeHtml(titulo)}</span>
       <strong id="${id}">${escapeHtml(valor)}</strong>
+      ${descripcion ? `<small>${escapeHtml(descripcion)}</small>` : ''}
     </article>
   `;
 }
@@ -358,7 +379,7 @@ function construirDashboardResumen(solicitudes, codigos, grupos = []) {
     },
     codigosPorGrupo: contarPorGrupoCodigo(codigos, grupos),
     solicitudesPorEstado: contarPorEstadoSolicitud(solicitudes),
-    ultimasSolicitudes: solicitudes.slice(0, 3)
+    ultimasSolicitudes: solicitudes.slice(0, 4)
   };
 }
 
@@ -374,17 +395,7 @@ function pintarDashboardResumen(resumen) {
   }
 
   renderDashboardCodigosGrupoLista(resumen.codigosPorGrupo);
-
-  renderDashboardChart(
-    'dashboardCodigosGrupoDonaChart',
-    'dashboardCodigosGrupoDonaFallback',
-    {
-      type: 'doughnut',
-      labels: resumen.codigosPorGrupo.map(item => item.label),
-      data: resumen.codigosPorGrupo.map(item => item.value),
-      backgroundColor: resumen.codigosPorGrupo.map(item => item.color)
-    }
-  );
+  renderDashboardFocusList(resumen);
 
   renderDashboardUltimasSolicitudes(resumen.ultimasSolicitudes);
 }
@@ -435,6 +446,52 @@ function renderDashboardCodigosGrupoLista(grupos) {
       </div>
     `;
   }).join('');
+}
+
+function renderDashboardFocusList(resumen) {
+  const contenedor = document.getElementById('dashboardFocusList');
+  if (!contenedor) return;
+
+  const gruposOrdenados = [...(resumen.codigosPorGrupo || [])]
+    .sort((a, b) => Number(b.value || 0) - Number(a.value || 0));
+  const grupoPrincipal = gruposOrdenados[0];
+  const status = resumen.solicitudesPorEstado || [];
+  const statusPrincipal = status[0];
+
+  const items = [
+    {
+      label: 'Solicitudes por atender',
+      value: resumen.kpis.pendientes,
+      detail: resumen.kpis.nuevas
+        ? `${resumen.kpis.nuevas} nuevas pendientes de revisar`
+        : 'Sin solicitudes nuevas pendientes'
+    },
+    {
+      label: 'Movimiento de codigos',
+      value: resumen.kpis.codigosHoy,
+      detail: `${resumen.kpis.codigosSemana} cambios registrados esta semana`
+    },
+    {
+      label: 'Grupo con mas articulos',
+      value: grupoPrincipal ? grupoPrincipal.value : '-',
+      detail: grupoPrincipal ? `${grupoPrincipal.label} · ID ${grupoPrincipal.id}` : 'Sin grupos disponibles'
+    },
+    {
+      label: 'Estado mas comun',
+      value: statusPrincipal ? statusPrincipal.value : '-',
+      detail: statusPrincipal ? statusPrincipal.label : 'Sin solicitudes cargadas'
+    }
+  ];
+
+  contenedor.innerHTML = items.map(item => `
+    <div class="dashboard-focus-item">
+      <div>
+        <strong>${escapeHtml(item.label)}</strong>
+        <span>${escapeHtml(item.detail)}</span>
+      </div>
+      <b>${escapeHtml(item.value)}</b>
+    </div>
+  `).join('');
 }
 
 function renderDashboardChart(canvasId, fallbackId, config) {
@@ -514,7 +571,12 @@ function construirChartConfig(config) {
 
 function renderDashboardUltimasSolicitudes(solicitudes) {
   const tbody = document.getElementById('dashboardUltimasSolicitudes');
+  const total = document.getElementById('dashboardUltimasSolicitudesTotal');
   if (!tbody) return;
+
+  if (total) {
+    total.textContent = `${(solicitudes || []).length} recientes`;
+  }
 
   if (!solicitudes || solicitudes.length === 0) {
     tbody.innerHTML = `
@@ -824,12 +886,13 @@ function renderBuscador() {
               <th>Status</th>
               <th>Fecha Ultimo Cambio</th>
               <th>Responsable</th>
+              <th>Rutas</th>
             </tr>
           </thead>
 
           <tbody id="buscadorResults">
             <tr>
-              <td colspan="10">Sin resultados todavia.</td>
+              <td colspan="11">Sin resultados todavia.</td>
             </tr>
           </tbody>
         </table>
@@ -856,9 +919,10 @@ async function buscarMateriaPrima() {
 
     tbody.innerHTML = `
       <tr>
-        <td colspan="10">Sin resultados todavia.</td>
+        <td colspan="11">Sin resultados todavia.</td>
       </tr>
     `;
+    buscadorResultadosRows = [];
 
     return;
   }
@@ -885,9 +949,10 @@ async function buscarMateriaPrima() {
 
     tbody.innerHTML = `
       <tr>
-        <td colspan="10">${escapeHtml(error.message)}</td>
+        <td colspan="11">${escapeHtml(error.message)}</td>
       </tr>
     `;
+    buscadorResultadosRows = [];
 
     return;
   }
@@ -910,9 +975,10 @@ async function buscarMateriaPrima() {
 
     tbody.innerHTML = `
       <tr>
-        <td colspan="10">No hay coincidencias.</td>
+        <td colspan="11">No hay coincidencias.</td>
       </tr>
     `;
+    buscadorResultadosRows = [];
 
     return;
   }
@@ -921,7 +987,8 @@ async function buscarMateriaPrima() {
     ? `Resultados encontrados: ${resultados.length} | Filtro por inicio en ${busquedaEspecial.etiqueta}`
     : `Resultados encontrados: ${resultados.length}`;
 
-  tbody.innerHTML = resultados.map(item => `
+  buscadorResultadosRows = resultados;
+  tbody.innerHTML = resultados.map((item, index) => `
     <tr>
       <td>${escapeHtml(item['Codigo SAP'])}</td>
       <td>${escapeHtml(item['Nombre SAP'])}</td>
@@ -933,8 +1000,28 @@ async function buscarMateriaPrima() {
       <td>${renderStatusBadge(item['Status'])}</td>
       <td>${escapeHtml(formatearFecha(item['Fecha de ultimo Cambio']))}</td>
       <td>${escapeHtml(item['Responsable'])}</td>
+      <td>${renderBotonRutaTrabajo(buscadorResultadosRows[index], index)}</td>
     </tr>
   `).join('');
+}
+
+function esArticuloPT(row) {
+  const codigoSap = String(row?.['Codigo SAP'] || '').trim().toUpperCase();
+  return Boolean(codigoSap) && PREFIJOS_CODIGO_SAP_PT.has(codigoSap[0]);
+}
+
+function renderBotonRutaTrabajo(item, index) {
+  if (!esArticuloPT(item)) {
+    return '<span class="route-not-available">Solo PT</span>';
+  }
+
+  return `
+    <button
+      type="button"
+      class="route-open-button"
+      onclick="abrirRutasTrabajoDesdeBuscador(${index})"
+    >Rutas</button>
+  `;
 }
 
 function renderVisualizer() {

@@ -1871,7 +1871,16 @@ function crearBloqueArticuloSolicitud(index) {
         <div class="pdf-column">
           <div class="paper-field underline-field">
             <label for="${codigoId}">Codigo Extranjero</label>
-            <input id="${codigoId}" class="solicitud-codigo-extranjero" type="text">
+            <input
+              id="${codigoId}"
+              class="solicitud-codigo-extranjero"
+              type="text"
+              required
+              oninput="limpiarAdvertenciaSolicitudCampo(this)"
+            >
+            <span class="solicitud-field-warning" data-warning-for="codigo">
+              El codigo extranjero no se puede quedar en blanco.
+            </span>
           </div>
 
           <div class="subsection-title">Datos Generales</div>
@@ -1881,50 +1890,97 @@ function crearBloqueArticuloSolicitud(index) {
             <select
               id="${unidadId}"
               class="solicitud-unidad-medida"
+              required
+              onchange="limpiarAdvertenciaSolicitudCampo(this)"
             >
               ${crearOpcionesUnidadMedida()}
             </select>
+            <span class="solicitud-field-warning" data-warning-for="um">
+              La unidad de medida no se puede quedar en blanco.
+            </span>
           </div>
 
           <div class="subsection-title">Es un producto fantasma? (Solo ADN-4):</div>
 
           <div class="pdf-check-options small-options">
             <label>
-              <input class="solicitud-fantasma" type="radio" name="${fantasmaName}" value="Si">
+              <input
+                class="solicitud-fantasma"
+                type="radio"
+                name="${fantasmaName}"
+                value="Si"
+                onchange="limpiarAdvertenciaSolicitudGrupo(this)"
+              >
               Si
             </label>
 
             <label>
-              <input class="solicitud-fantasma" type="radio" name="${fantasmaName}" value="No">
+              <input
+                class="solicitud-fantasma"
+                type="radio"
+                name="${fantasmaName}"
+                value="No"
+                onchange="limpiarAdvertenciaSolicitudGrupo(this)"
+              >
               No
             </label>
           </div>
+          <span class="solicitud-field-warning" data-warning-for="fantasma">
+            Selecciona si es producto fantasma o no.
+          </span>
         </div>
 
         <div class="pdf-column">
           <div class="paper-field underline-field">
             <label for="${descripcionId}">Descripcion Extranjera</label>
-            <input id="${descripcionId}" class="solicitud-descripcion-extranjera" type="text">
+            <input
+              id="${descripcionId}"
+              class="solicitud-descripcion-extranjera"
+              type="text"
+              required
+              oninput="limpiarAdvertenciaSolicitudCampo(this)"
+            >
+            <span class="solicitud-field-warning" data-warning-for="descripcion">
+              La descripcion extranjera no se puede quedar en blanco.
+            </span>
           </div>
 
           <div class="subsection-title">Categorias del articulo</div>
 
           <div class="pdf-check-options category-options">
             <label>
-              <input id="${inventarioId}" class="solicitud-categoria-inventario" type="checkbox">
+              <input
+                id="${inventarioId}"
+                class="solicitud-categoria-inventario"
+                type="checkbox"
+                onchange="limpiarAdvertenciaSolicitudGrupo(this)"
+              >
               <span><strong>Articulo de Inventario:</strong> Articulo capaz de guardarse fisicamente.</span>
             </label>
 
             <label>
-              <input id="${ventaId}" class="solicitud-categoria-venta" type="checkbox">
+              <input
+                id="${ventaId}"
+                class="solicitud-categoria-venta"
+                type="checkbox"
+                onchange="limpiarAdvertenciaSolicitudGrupo(this)"
+              >
               <span><strong>Articulo de Venta:</strong> Articulo para venta.</span>
             </label>
 
             <label>
-              <input id="${compraId}" class="solicitud-categoria-compra" type="checkbox">
+              <input
+                id="${compraId}"
+                class="solicitud-categoria-compra"
+                type="checkbox"
+                onchange="limpiarAdvertenciaSolicitudGrupo(this)"
+              >
               <span><strong>Articulo de Compra:</strong> Articulo comprado a un proveedor.</span>
             </label>
           </div>
+          <span class="solicitud-field-warning" data-warning-for="categoria">
+            Selecciona al menos una categoria del articulo.
+          </span>
         </div>
       </div>
 
@@ -2030,9 +2086,11 @@ function renderFormularioSolicitudGenerica(tipo, data = null, opciones = {}) {
           <h2>${escapeHtml(titulo)}</h2>
         </div>
 
-        <button type="button" onclick="${opciones.integrado === false ? 'renderSolicitudes()' : 'mostrarNuevaSolicitud()'}">
-          ${opciones.integrado === false ? 'Regresar' : 'Cambiar tipo'}
-        </button>
+        ${opciones.integrado === false ? `
+          <button type="button" onclick="renderSolicitudes()">
+            Regresar
+          </button>
+        ` : ''}
       </div>
 
       <div class="solicitud-row three-cols">
@@ -2377,8 +2435,8 @@ window.crearSolicitud = function crearSolicitud(opciones = {}) {
   solicitudArticuloContador = 1;
 
   const botonRegresar = opciones.integrado
-    ? '<button type="button" onclick="mostrarNuevaSolicitud()">Cambiar tipo</button>'
-    : '<button type="button" onclick="renderSolicitudes()">Regresar</button>';
+    ? ''
+    : '<button type="button" class="solicitud-secondary-action" onclick="renderSolicitudes()">Regresar</button>';
 
   const formularioHtml = `
       <div class="solicitud-paper">
@@ -2387,7 +2445,13 @@ window.crearSolicitud = function crearSolicitud(opciones = {}) {
             <h2>Alta de Producto</h2>
           </div>
 
-          ${botonRegresar}
+          <div class="solicitud-actions solicitud-actions-sticky">
+            ${botonRegresar}
+            <div id="solicitudAgregarArticulo" class="solicitud-add-article solicitud-add-article-inline">
+              <button type="button" onclick="agregarArticuloSolicitud()">Agregar articulo</button>
+            </div>
+            <button type="button" onclick="guardarSolicitud()">Guardar solicitud</button>
+          </div>
         </div>
 
         <div class="solicitud-row three-cols">
@@ -2416,10 +2480,6 @@ window.crearSolicitud = function crearSolicitud(opciones = {}) {
 
         <div id="solicitudArticulosContainer">
           ${crearBloqueArticuloSolicitud(1)}
-        </div>
-
-        <div id="solicitudAgregarArticulo" class="solicitud-add-article">
-          <button type="button" onclick="agregarArticuloSolicitud()">Agregar articulos</button>
         </div>
 
         <div class="paper-section solicitud-formato-futuro" hidden>
@@ -2529,10 +2589,6 @@ window.crearSolicitud = function crearSolicitud(opciones = {}) {
           </div>
         </div>
 
-        <div class="solicitud-actions">
-          <button type="button" onclick="guardarSolicitud()">Guardar solicitud</button>
-        </div>
-
         <div id="solicitudesStatus" class="status-box">Completa el formato para registrar la solicitud.</div>
       </div>
   `;
@@ -2605,6 +2661,133 @@ window.limpiarSolicitud = function limpiarSolicitud() {
   crearSolicitud();
 };
 
+function validarArticulosAltaProductoSolicitud(articulos) {
+  let esValido = true;
+  let primerCampoInvalido = null;
+
+  articulos.forEach(articulo => {
+    limpiarAdvertenciasArticuloSolicitud(articulo);
+
+    const codigo = articulo.querySelector('.solicitud-codigo-extranjero');
+    const descripcion = articulo.querySelector('.solicitud-descripcion-extranjera');
+    const unidad = articulo.querySelector('.solicitud-unidad-medida');
+    const fantasma = articulo.querySelector('.solicitud-fantasma:checked');
+    const categorias = [
+      articulo.querySelector('.solicitud-categoria-inventario'),
+      articulo.querySelector('.solicitud-categoria-venta'),
+      articulo.querySelector('.solicitud-categoria-compra')
+    ].filter(Boolean);
+
+    if (!codigo?.value.trim()) {
+      esValido = false;
+      primerCampoInvalido ||= codigo;
+      mostrarAdvertenciaSolicitud(articulo, 'codigo');
+    }
+
+    if (!descripcion?.value.trim()) {
+      esValido = false;
+      primerCampoInvalido ||= descripcion;
+      mostrarAdvertenciaSolicitud(articulo, 'descripcion');
+    }
+
+    if (!unidad?.value.trim()) {
+      esValido = false;
+      primerCampoInvalido ||= unidad;
+      mostrarAdvertenciaSolicitud(articulo, 'um');
+    }
+
+    if (!fantasma) {
+      esValido = false;
+      primerCampoInvalido ||= articulo.querySelector('.solicitud-fantasma');
+      mostrarAdvertenciaSolicitud(articulo, 'fantasma');
+    }
+
+    if (!categorias.some(input => input.checked)) {
+      esValido = false;
+      primerCampoInvalido ||= categorias[0];
+      mostrarAdvertenciaSolicitud(articulo, 'categoria');
+    }
+  });
+
+  if (primerCampoInvalido) {
+    primerCampoInvalido.focus();
+    primerCampoInvalido.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
+  return esValido;
+}
+
+function limpiarAdvertenciasArticuloSolicitud(articulo) {
+  articulo.querySelectorAll('.solicitud-field-warning.is-visible').forEach(warning => {
+    warning.classList.remove('is-visible');
+  });
+
+  articulo.querySelectorAll('.solicitud-field-invalid').forEach(control => {
+    control.classList.remove('solicitud-field-invalid');
+  });
+}
+
+function mostrarAdvertenciaSolicitud(articulo, warningFor) {
+  articulo
+    .querySelector(`[data-warning-for="${warningFor}"]`)
+    ?.classList.add('is-visible');
+
+  const selectorPorCampo = {
+    codigo: '.solicitud-codigo-extranjero',
+    descripcion: '.solicitud-descripcion-extranjera',
+    um: '.solicitud-unidad-medida',
+    fantasma: '.solicitud-fantasma',
+    categoria: '.solicitud-categoria-inventario, .solicitud-categoria-venta, .solicitud-categoria-compra'
+  };
+
+  articulo.querySelectorAll(selectorPorCampo[warningFor] || '').forEach(control => {
+    control.classList.add('solicitud-field-invalid');
+  });
+}
+
+window.limpiarAdvertenciaSolicitudCampo = function limpiarAdvertenciaSolicitudCampo(control) {
+  const articulo = control?.closest('.solicitud-articulo');
+  if (!articulo || !control.value.trim()) return;
+
+  control.classList.remove('solicitud-field-invalid');
+
+  const warningFor = control.classList.contains('solicitud-codigo-extranjero')
+    ? 'codigo'
+    : control.classList.contains('solicitud-descripcion-extranjera')
+      ? 'descripcion'
+      : control.classList.contains('solicitud-unidad-medida')
+        ? 'um'
+        : '';
+
+  if (warningFor) {
+    articulo
+      .querySelector(`[data-warning-for="${warningFor}"]`)
+      ?.classList.remove('is-visible');
+  }
+};
+
+window.limpiarAdvertenciaSolicitudGrupo = function limpiarAdvertenciaSolicitudGrupo(control) {
+  const articulo = control?.closest('.solicitud-articulo');
+  if (!articulo) return;
+
+  if (control.classList.contains('solicitud-fantasma')) {
+    articulo.querySelectorAll('.solicitud-fantasma').forEach(input => {
+      input.classList.remove('solicitud-field-invalid');
+    });
+    articulo.querySelector('[data-warning-for="fantasma"]')?.classList.remove('is-visible');
+    return;
+  }
+
+  const categorias = articulo.querySelectorAll(
+    '.solicitud-categoria-inventario, .solicitud-categoria-venta, .solicitud-categoria-compra'
+  );
+
+  if (Array.from(categorias).some(input => input.checked)) {
+    categorias.forEach(input => input.classList.remove('solicitud-field-invalid'));
+    articulo.querySelector('[data-warning-for="categoria"]')?.classList.remove('is-visible');
+  }
+};
+
 // Guardado de Alta de Producto con bloqueo contra doble clic.
 async function guardarSolicitud() {
   if (!usuarioPuedeEnSolicitudes(0, 2)) {
@@ -2634,6 +2817,13 @@ async function guardarSolicitud() {
   }
 
   const articulos = Array.from(document.querySelectorAll('.solicitud-articulo'));
+
+  if (!validarArticulosAltaProductoSolicitud(articulos)) {
+    if (status) {
+      status.textContent = 'Revisa los campos obligatorios marcados antes de guardar.';
+    }
+    return;
+  }
 
   const payload = articulos.map(articulo => {
     const fantasmaValue = articulo.querySelector('.solicitud-fantasma:checked')?.value || null;
