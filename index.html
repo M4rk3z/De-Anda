@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>Index De Anda</title>
+
+    <link rel="icon" type="image/png" href="assets/de-anda-logo-nb.png?v=20260706-1">
+    <link rel="apple-touch-icon" href="assets/de-anda-logo-nb.png?v=20260706-1">
+    <link rel="stylesheet" href="styles.css?v=20260714-4">
+  </head>
+
+  <body>
+    <div id="loginScreen" class="login-screen">
+      <form class="login-card" onsubmit="login(event)">
+        <div class="login-brand">
+          <span class="brand-title">Index</span>
+          <span class="brand-subtitle">De Anda</span>
+        </div>
+
+        <label for="loginUsuario">Usuario</label>
+        <input id="loginUsuario" type="text" autocomplete="username" required>
+
+        <label for="loginPassword">Contraseña</label>
+        <input id="loginPassword" type="password" autocomplete="current-password" required>
+
+        <button type="submit">Entrar</button>
+
+        <p id="loginStatus" class="login-status"></p>
+      </form>
+    </div>
+
+    <div id="appScreen" class="app" style="display: none;">
+      <header class="topbar">
+        <div class="brand">
+          <span class="brand-title">Index</span>
+          <span class="brand-subtitle">De Anda</span>
+        </div>
+
+        <div class="topbar-session">
+          <span id="topbarUserName" class="topbar-user-name"></span>
+          <button class="logout-button" onclick="cerrarSesion()">Cerrar sesion</button>
+        </div>
+      </header>
+
+      <div class="main-layout">
+        <aside class="sidebar">
+          <button class="menu-toggle" onclick="toggleSidebar()" aria-label="Abrir menu">
+            ☰
+          </button>
+
+          <nav id="sideMenu" class="side-menu open">
+            <button data-section="bienvenida" onclick="showSection('bienvenida')">Inicio</button>
+            <button data-section="buscador" onclick="showSection('buscador')">Buscador</button>
+            <button data-section="nuevoCodigo" onclick="showSection('nuevoCodigo')">Nuevo Codigo</button>
+            <button data-section="simuladorADN" onclick="showSection('simuladorADN')">Simulador ADN</button>
+            <button data-section="panelControl" onclick="showSection('panelControl')">Panel de control</button>
+            <button data-section="solicitudes" onclick="showSection('solicitudes')">Solicitudes</button>
+            <button data-section="manual" onclick="showSection('manual')">Manual</button>
+          </nav>
+
+          <div class="sidebar-rights">
+            Derechos reservados De Anda y M4rk3z Solutions.
+          </div>
+        </aside>
+
+        <main class="content">
+          <section id="viewer" class="viewer">
+            <h2>Bienvenido</h2>
+            <p>Aqui se mostrara el contenido del modulo seleccionado.</p>
+          </section>
+        </main>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+    <script src="accesos.js?v=20260715-2"></script>
+    <script src="scripts.js?v=20260722-1"></script>
+    <script src="nuevoCodigo.js?v=20260714-2"></script>
+    <script src="panel.js?v=20260722-1"></script>
+    <script src="solicitudesNivelCompleto.js?v=20260721-1"></script>
+    <script src="loginPestanaUnica.js?v=20260714-2"></script>
+  </body>
+</html>
