@@ -116,10 +116,152 @@ body { width: 100%; height: 100%; font-family: Arial, sans-serif; background: #f
 /* Rutas de trabajo */
 .route-workspace { gap: 16px; color: var(--sap-text); }
 .route-header,
-.route-actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.route-actions { display: flex; align-items: center; gap: 12px; }
+.route-header { justify-content: space-between; }
+.route-header-controls { display: flex; align-items: center; justify-content: flex-end; gap: 10px; flex-wrap: wrap; }
+.route-actions { justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
 .route-header { border-bottom: 2px solid var(--sap-navy); padding-bottom: 12px; }
 .route-header h2 { margin: 0; color: var(--sap-navy); }
 .route-header p { margin: 4px 0 0; color: var(--sap-muted); font-weight: 700; }
+.route-view-options {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 8px 10px;
+  border: 1px solid var(--sap-border);
+  border-radius: 4px;
+  background: #f7fafd;
+}
+.route-view-options-title { margin-right: 2px; color: var(--sap-navy); font-size: 12px; font-weight: 800; }
+.route-view-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 30px;
+  padding: 3px 9px;
+  border: 1px solid #c7d9ea;
+  border-radius: 4px;
+  background: #ffffff;
+  color: var(--sap-navy);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.route-view-option:hover { border-color: var(--sap-blue); background: #eef6fd; }
+.route-view-option input { width: 16px; height: 16px; margin: 0; accent-color: var(--sap-blue); cursor: pointer; }
+.route-view-option .route-type-icon { width: 20px; height: 20px; font-size: 8px; }
+.route-pdf-modal {
+  position: fixed;
+  z-index: 5000;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(3, 23, 42, 0.52);
+}
+.route-pdf-dialog {
+  display: grid;
+  grid-template-rows: auto auto auto minmax(120px, 1fr) auto auto;
+  width: min(760px, 100%);
+  max-height: min(86vh, 760px);
+  overflow: hidden;
+  border: 1px solid var(--sap-border);
+  border-top: 4px solid var(--sap-blue);
+  border-radius: 6px;
+  background: #ffffff;
+  box-shadow: 0 24px 64px rgba(3, 23, 42, 0.28);
+  outline: none;
+}
+.route-pdf-dialog-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 18px 14px;
+  border-bottom: 1px solid var(--sap-border);
+}
+.route-pdf-dialog-header h3 { margin: 2px 0 3px; color: var(--sap-navy); font-size: 19px; }
+.route-pdf-dialog-header p { margin: 0; color: var(--sap-muted); font-size: 12px; font-weight: 700; }
+.route-pdf-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid var(--sap-border);
+  border-radius: 4px;
+  background: #ffffff;
+  color: var(--sap-navy);
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+}
+.route-pdf-close:hover { border-color: var(--sap-blue); background: #eef6fd; }
+.route-pdf-order-fields {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(120px, 1fr));
+  gap: 9px 10px;
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--sap-border);
+}
+.route-pdf-order-field { display: grid; gap: 4px; min-width: 0; }
+.route-pdf-order-field > span { color: var(--sap-navy); font-size: 11px; font-weight: 800; }
+.route-pdf-order-field input {
+  width: 100%;
+  min-height: 34px;
+  padding: 5px 8px;
+  border: 1px solid #9dbbd6;
+  border-radius: 4px;
+  background: #ffffff;
+  color: var(--sap-text);
+  font: inherit;
+  font-size: 12px;
+}
+.route-pdf-order-field input:focus { border-color: var(--sap-blue); outline: 2px solid #d7ebfc; }
+.route-pdf-order-field input.is-invalid { border-color: #bb0000; background: #fff5f5; outline: 2px solid #f7dada; }
+.route-pdf-field-wide { grid-column: span 2; }
+.route-pdf-selection-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 10px 18px;
+  border-bottom: 1px solid var(--sap-border);
+  background: #f7fafd;
+}
+.route-pdf-selection-count { margin-left: auto; color: var(--sap-blue-dark); font-size: 12px; }
+.route-pdf-process-list { display: grid; align-content: start; gap: 6px; overflow-y: auto; padding: 12px 18px; }
+.route-pdf-process-option {
+  display: grid;
+  grid-template-columns: 18px 24px 28px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  min-height: 58px;
+  padding: 7px 10px;
+  border: 1px solid #d5e2ee;
+  border-radius: 4px;
+  background: #ffffff;
+  cursor: pointer;
+}
+.route-pdf-process-option:hover { border-color: #7eb4e4; background: #f4f9fe; }
+.route-pdf-process-option:has(input:checked) { border-left: 4px solid var(--sap-blue); background: #f7fbff; }
+.route-pdf-process-check { width: 16px; height: 16px; margin: 0; accent-color: var(--sap-blue); cursor: pointer; }
+.route-pdf-process-number { color: var(--sap-blue-dark); font-size: 12px; font-weight: 800; text-align: center; }
+.route-pdf-process-info { display: grid; gap: 2px; min-width: 0; }
+.route-pdf-process-info strong { overflow: hidden; color: var(--sap-navy); font-size: 13px; text-overflow: ellipsis; white-space: nowrap; }
+.route-pdf-process-info span { color: var(--sap-text); font-size: 12px; font-weight: 700; }
+.route-pdf-process-info small { overflow: hidden; color: var(--sap-muted); font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+.route-pdf-selection-message { min-height: 18px; margin: 0; padding: 0 18px; color: #9b0000; font-size: 12px; font-weight: 700; }
+.route-pdf-dialog-actions { display: flex; justify-content: flex-end; gap: 8px; padding: 12px 18px 16px; }
+.route-pdf-dialog-actions button:disabled { border-color: #cbd5e1; background: #e2e8f0; color: #64748b; cursor: not-allowed; }
+@media (max-width: 700px) {
+  .route-pdf-modal { padding: 8px; }
+  .route-pdf-dialog { max-height: 94vh; }
+  .route-pdf-order-fields { grid-template-columns: repeat(2, minmax(110px, 1fr)); }
+  .route-pdf-selection-count { width: 100%; margin-left: 0; }
+}
 .route-primary-button,
 .route-secondary-button,
 .route-remove-button,
@@ -189,6 +331,9 @@ body { width: 100%; height: 100%; font-family: Arial, sans-serif; background: #f
 .route-remove-button:hover { background: #f7dada; }
 .route-tree-card { overflow: hidden; border: 1px solid var(--sap-border); border-radius: 4px; background: #f7fafd; padding: 6px; }
 .route-tree { overflow-x: auto; padding: 2px 0; }
+.route-tree.route-hide-material .route-node-item[data-node-type="MATERIA_PRIMA"],
+.route-tree.route-hide-routes .route-node-item[data-node-type="RUTA"],
+.route-tree.route-hide-children .route-node-item[data-node-type="HIJO"] { display: none; }
 .route-tree-root,
 .route-tree-branches {
   position: relative;
@@ -379,6 +524,19 @@ body { width: 100%; height: 100%; font-family: Arial, sans-serif; background: #f
   font-size: 11px;
 }
 @media (max-width: 900px) {
+  .route-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .route-header-controls {
+    justify-content: flex-start;
+  }
+
+  .route-actions {
+    justify-content: flex-start;
+  }
+
   .route-tree-product,
   .route-node-title {
     align-items: stretch;
@@ -1728,6 +1886,90 @@ button:disabled,
 .login-card .login-brand { padding-bottom: 16px; border-bottom: 1px solid var(--sap-border-soft); }
 .login-card .brand-title { color: var(--sap-navy); }
 .login-card .brand-subtitle { color: var(--sap-muted); }
+.session-notice-overlay {
+  position: fixed;
+  z-index: 7000;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(3, 23, 42, 0.58);
+}
+.session-notice-dialog {
+  width: min(520px, 100%);
+  overflow: hidden;
+  border: 1px solid var(--sap-border);
+  border-top: 4px solid var(--sap-warning);
+  border-radius: 6px;
+  background: #ffffff;
+  box-shadow: 0 24px 64px rgba(3, 23, 42, 0.3);
+  outline: none;
+}
+.session-notice-header {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  gap: 7px;
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid var(--sap-border);
+  background: #f8fafc;
+  text-align: center;
+}
+.session-notice-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  border-radius: 50%;
+  background: #fff4e5;
+  color: #a15c00;
+  font-size: 22px;
+  font-weight: 900;
+}
+.session-notice-kicker { color: #a15c00; font-size: 10px; font-weight: 800; text-transform: uppercase; }
+.session-notice-header h2 { margin: 0; color: var(--sap-navy); font-size: 22px; }
+.session-notice-content {
+  display: grid;
+  gap: 15px;
+  justify-items: center;
+  padding: 20px 26px 12px;
+  color: var(--sap-text);
+  text-align: center;
+}
+.session-notice-content p { max-width: 440px; margin: 0; font-size: 14px; line-height: 1.55; }
+.session-notice-link {
+  display: block;
+  width: min(360px, 100%);
+  padding: 13px 16px;
+  border: 1px solid #9dbbd6;
+  border-left: 4px solid var(--sap-blue);
+  border-radius: 4px;
+  background: #eef6fd;
+  color: var(--sap-blue-dark);
+  font-size: 17px;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+  text-align: center;
+  text-decoration: none;
+}
+.session-notice-link:hover { border-color: var(--sap-blue); background: #e1f0fc; text-decoration: underline; }
+.session-notice-signature { padding-top: 3px; color: var(--sap-muted); }
+.session-notice-actions { display: flex; justify-content: center; padding: 12px 20px 20px; }
+.session-notice-actions button {
+  min-width: 150px;
+  min-height: 38px;
+  padding: 0 18px;
+  border: 1px solid var(--sap-blue-dark);
+  border-radius: 4px;
+  background: var(--sap-blue);
+  color: #ffffff;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+.session-notice-actions button:hover { background: var(--sap-blue-dark); }
 @media (max-width: 800px) {
   .topbar {
     padding: 0 12px;

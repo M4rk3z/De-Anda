@@ -1,11 +1,18 @@
-// Configuracion de Supabase y conexion principal.
+// Configuracion de datos y conexion principal.
 const SUPABASE_URL = 'https://ehwxvirqiwztonbgosfy.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVod3h2aXJxaXd6dG9uYmdvc2Z5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAzNDAwMTUsImV4cCI6MjA5NTkxNjAxNX0.VzMoS_kOFIjvSz_ewdu6Q9_vAIwAnTuqPTlxFvzfJk8';
+const LOCAL_API_URL = `${window.location.protocol}//${window.location.hostname || '127.0.0.1'}:3001`;
+// Por ahora Supabase queda como conexion predeterminada para pruebas.
+// En la PC local final se activa PostgreSQL con:
+// localStorage.setItem('deandaDataBackend', 'local')
+const DATA_BACKEND = localStorage.getItem('deandaDataBackend') || 'supabase';
 
-const supabaseClient = supabase.createClient(
-  SUPABASE_URL,
-  SUPABASE_ANON_KEY
-);
+const supabaseClient = DATA_BACKEND === 'local' && typeof window.crearClienteLocalDeAnda === 'function'
+  ? window.crearClienteLocalDeAnda(LOCAL_API_URL)
+  : supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_ANON_KEY
+  );
 
 let dashboardCharts = [];
 let buscadorResultadosRows = [];
@@ -121,6 +128,9 @@ function showSection(section) {
 
   if (section === 'bienvenida') {
     renderDashboardInicio();
+    if (typeof mostrarAvisoAccesoLocal === 'function') {
+      mostrarAvisoAccesoLocal();
+    }
     return;
   }
 

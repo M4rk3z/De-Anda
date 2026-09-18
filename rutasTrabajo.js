@@ -7,6 +7,8 @@ let rutaTrabajoCatalogoCentrosRecurso = null;
 let rutaTrabajoStatusTimer = null;
 let rutaTrabajoNodosPlegados = new Set();
 let rutaTrabajoPadresArticuloActual = [];
+let rutaTrabajoFiltrosVisibilidad = crearFiltrosVisibilidadRutasTrabajo();
+let rutaTrabajoSeleccionPdf = null;
 
 function abrirRutasTrabajoDesdeBuscador(index) {
   const articulo = buscadorResultadosRows[index];
@@ -26,6 +28,7 @@ function abrirRutasTrabajoArticulo(articulo) {
   rutaTrabajoNodos = [];
   rutaTrabajoPadresArticuloActual = [];
   rutaTrabajoNodosPlegados.clear();
+  rutaTrabajoFiltrosVisibilidad = crearFiltrosVisibilidadRutasTrabajo();
   renderRutasTrabajoArticulo();
   cargarRutasTrabajoArticulo();
   cargarPadresRutaTrabajoArticulo();
@@ -45,7 +48,23 @@ function renderRutasTrabajoArticulo() {
           <p>${escapeHtml(articulo['Codigo SAP'] || '-')} | ${escapeHtml(articulo['Nombre SAP'] || '-')}</p>
         </div>
 
-        <button type="button" class="route-secondary-button" onclick="renderBuscador()">Regresar al buscador</button>
+        <div class="route-header-controls">
+          <button type="button" class="route-secondary-button route-back-button" onclick="renderBuscador()">Regresar al buscador</button>
+          <div class="route-actions">
+            <button type="button" class="route-secondary-button" onclick="descargarRutasTrabajoArticulo()">Descargar</button>
+            <button type="button" class="route-secondary-button" onclick="descargarFormatoTiemposRutasTrabajo()">Hoja viajera PDF</button>
+            <button type="button" class="route-primary-button" onclick="guardarRutasTrabajoArticulo()">Guardar arbol</button>
+          </div>
+        </div>
+      </div>
+
+      <span id="rutaTrabajoStatus" class="route-status-inline"></span>
+
+      <div class="route-view-options" role="group" aria-label="Elementos visibles en el arbol">
+        <span class="route-view-options-title">Mostrar</span>
+        ${renderFiltroVisibilidadRutaTrabajo('MATERIA_PRIMA', 'MP', 'Materia prima')}
+        ${renderFiltroVisibilidadRutaTrabajo('RUTA', 'RT', 'Rutas')}
+        ${renderFiltroVisibilidadRutaTrabajo('HIJO', 'H', 'Hijos')}
       </div>
 
       <div id="rutaTrabajoPadres" class="route-parent-alert"></div>
@@ -53,18 +72,46 @@ function renderRutasTrabajoArticulo() {
       <section class="route-tree-card">
         <div id="rutaRamificacion" class="route-tree"></div>
       </section>
-
-      <span id="rutaTrabajoStatus" class="route-status-inline"></span>
-
-      <div class="route-actions">
-        <button type="button" class="route-secondary-button" onclick="descargarRutasTrabajoArticulo()">Descargar</button>
-        <button type="button" class="route-primary-button" onclick="guardarRutasTrabajoArticulo()">Guardar arbol</button>
-      </div>
     </div>
   `;
 
   renderRamificacionRutasTrabajo();
   renderPadresRutaTrabajoArticulo();
+}
+
+function crearFiltrosVisibilidadRutasTrabajo() {
+  return {
+    MATERIA_PRIMA: true,
+    RUTA: true,
+    HIJO: true
+  };
+}
+
+function renderFiltroVisibilidadRutaTrabajo(tipo, icono, etiqueta) {
+  const checked = rutaTrabajoFiltrosVisibilidad[tipo] !== false ? 'checked' : '';
+  return `
+    <label class="route-view-option">
+      <input type="checkbox" data-route-filter="${tipo}" ${checked}
+        onchange="cambiarVisibilidadTipoRutaTrabajo('${tipo}', this.checked)">
+      <span class="route-type-icon ${obtenerClaseIconoTipoTrabajo(tipo)}">${icono}</span>
+      <span>${etiqueta}</span>
+    </label>
+  `;
+}
+
+function cambiarVisibilidadTipoRutaTrabajo(tipo, visible) {
+  if (!Object.prototype.hasOwnProperty.call(rutaTrabajoFiltrosVisibilidad, tipo)) return;
+  rutaTrabajoFiltrosVisibilidad[tipo] = Boolean(visible);
+  aplicarFiltrosVisibilidadRutasTrabajo();
+}
+
+function aplicarFiltrosVisibilidadRutasTrabajo() {
+  const arbol = document.getElementById('rutaRamificacion');
+  if (!arbol) return;
+
+  arbol.classList.toggle('route-hide-material', !rutaTrabajoFiltrosVisibilidad.MATERIA_PRIMA);
+  arbol.classList.toggle('route-hide-routes', !rutaTrabajoFiltrosVisibilidad.RUTA);
+  arbol.classList.toggle('route-hide-children', !rutaTrabajoFiltrosVisibilidad.HIJO);
 }
 
 async function cargarPadresRutaTrabajoArticulo() {
@@ -307,6 +354,8 @@ function renderRamificacionRutasTrabajo() {
       ${renderListaNodosTrabajo(obtenerSubnodosVisiblesTrabajo({ uid: 'root', tipo: 'PADRE', children: rutaTrabajoNodos }), 'root')}
     </div>
   `;
+
+  aplicarFiltrosVisibilidadRutasTrabajo();
 }
 
 function renderListaNodosTrabajo(nodos, parentPath) {
@@ -351,7 +400,7 @@ function renderNodoTrabajo(nodo, path, nivel) {
     : '';
 
   return `
-    <li class="${nivel === 1 ? 'route-first-type' : ''}">
+    <li class="route-node-item ${nivel === 1 ? 'route-first-type' : ''}" data-node-type="${nodo.tipo}">
       <div class="route-tree-node ${nodeClass} route-edit-node" data-node-uid="${nodo.uid}">
         ${encabezadoCompleto}
         ${renderCamposNodoTrabajo(nodo, path, nivel)}
@@ -667,6 +716,11 @@ function obtenerPrioridadNodoTrabajo(tipo) {
 
 function agregarNodoTrabajo(parentUid, tipo) {
   rutaTrabajoNodos = leerArbolTrabajoDesdePantalla();
+  if (Object.prototype.hasOwnProperty.call(rutaTrabajoFiltrosVisibilidad, tipo)) {
+    rutaTrabajoFiltrosVisibilidad[tipo] = true;
+    const checkbox = document.querySelector(`.route-view-option input[data-route-filter="${tipo}"]`);
+    if (checkbox) checkbox.checked = true;
+  }
   const nuevoNodo = crearNodoTrabajoPorTipo(tipo);
 
   if (!parentUid) {
@@ -958,6 +1012,225 @@ function descargarRutasTrabajoArticulo() {
   setRutaTrabajoStatus('Archivo de rutas descargado.');
 }
 
+function descargarFormatoTiemposRutasTrabajo() {
+  const articulo = rutaTrabajoArticuloActual;
+  if (!articulo) return;
+
+  if (!window.PDFLib) {
+    setRutaTrabajoStatus('No se pudo generar el PDF. Revisa que pdf-lib este cargado.');
+    return;
+  }
+
+  const nodos = obtenerNodosTrabajoValidos();
+  if (!nodos.length || !arbolTrabajoTieneRutas(nodos)) {
+    setRutaTrabajoStatus('No hay rutas para generar el formato de tiempos.');
+    return;
+  }
+
+  abrirSelectorProcesosHojaViajera(articulo, nodos);
+}
+
+function abrirSelectorProcesosHojaViajera(articulo, nodos) {
+  cerrarSelectorProcesosHojaViajera();
+  const rutas = obtenerFilasFormatoTiemposRutasTrabajo(nodos);
+  rutaTrabajoSeleccionPdf = { articulo, nodos, rutas };
+
+  const modal = document.createElement('div');
+  modal.id = 'routePdfProcessModal';
+  modal.className = 'route-pdf-modal';
+  modal.setAttribute('role', 'presentation');
+  modal.onclick = event => {
+    if (event.target === modal) cerrarSelectorProcesosHojaViajera();
+  };
+  modal.onkeydown = event => {
+    if (event.key === 'Escape') cerrarSelectorProcesosHojaViajera();
+  };
+  modal.innerHTML = `
+    <section class="route-pdf-dialog" role="dialog" aria-modal="true"
+      aria-labelledby="routePdfDialogTitle" tabindex="-1">
+      <header class="route-pdf-dialog-header">
+        <div>
+          <span class="route-node-kicker">Hoja viajera PDF</span>
+          <h3 id="routePdfDialogTitle">Selecciona los procesos</h3>
+          <p>${escapeHtml(articulo['Codigo SAP'] || '-')} | ${escapeHtml(articulo['Nombre SAP'] || '-')}</p>
+        </div>
+        <button type="button" class="route-pdf-close" onclick="cerrarSelectorProcesosHojaViajera()"
+          aria-label="Cerrar" title="Cerrar">&times;</button>
+      </header>
+
+      <div class="route-pdf-order-fields">
+        ${renderCampoEncabezadoHojaViajera('routePdfOrden', 'Orden de produccion')}
+        ${renderCampoEncabezadoHojaViajera('routePdfLote', 'Lote')}
+        ${renderCampoEncabezadoHojaViajera('routePdfCantidad', 'Cantidad', 'number')}
+        ${renderCampoEncabezadoHojaViajera('routePdfTurno', 'Turno')}
+        ${renderCampoEncabezadoHojaViajera('routePdfFechaInicio', 'Fecha de inicio', 'date', '', false)}
+        ${renderCampoEncabezadoHojaViajera('routePdfFechaTermino', 'Fecha de termino', 'date', '', false)}
+        ${renderCampoEncabezadoHojaViajera('routePdfResponsable', 'Responsable', 'text', 'route-pdf-field-wide', false)}
+      </div>
+
+      <div class="route-pdf-selection-toolbar">
+        <button type="button" class="route-secondary-button" onclick="seleccionarProcesosHojaViajera(true)">Seleccionar todos</button>
+        <button type="button" class="route-secondary-button" onclick="seleccionarProcesosHojaViajera(false)">Deseleccionar todos</button>
+        <strong id="routePdfSelectionCount" class="route-pdf-selection-count"></strong>
+      </div>
+
+      <div class="route-pdf-process-list">
+        ${rutas.map((ruta, index) => renderOpcionProcesoHojaViajera(ruta, index)).join('')}
+      </div>
+
+      <p id="routePdfSelectionMessage" class="route-pdf-selection-message" aria-live="polite"></p>
+
+      <footer class="route-pdf-dialog-actions">
+        <button type="button" class="route-secondary-button" onclick="cerrarSelectorProcesosHojaViajera()">Cancelar</button>
+        <button id="routePdfGenerateButton" type="button" class="route-primary-button"
+          onclick="generarHojaViajeraSeleccionada()">Generar PDF</button>
+      </footer>
+    </section>
+  `;
+
+  document.body.appendChild(modal);
+  actualizarConteoProcesosHojaViajera();
+  modal.querySelector('.route-pdf-dialog')?.focus();
+}
+
+function renderCampoEncabezadoHojaViajera(id, etiqueta, tipo = 'text', claseExtra = '', obligatorio = true) {
+  const minimo = tipo === 'number' ? 'min="1" step="1"' : '';
+  const requerido = obligatorio ? 'required' : '';
+  const sufijo = obligatorio ? '' : ' (opcional)';
+  return `
+    <label class="route-pdf-order-field ${claseExtra}">
+      <span>${etiqueta}${sufijo}</span>
+      <input id="${id}" type="${tipo}" ${minimo} ${requerido} autocomplete="off"
+        oninput="limpiarErrorCampoHojaViajera(this)">
+    </label>
+  `;
+}
+
+function limpiarErrorCampoHojaViajera(input) {
+  input?.classList.remove('is-invalid');
+  const mensaje = document.getElementById('routePdfSelectionMessage');
+  if (mensaje) mensaje.textContent = '';
+}
+
+function renderOpcionProcesoHojaViajera(ruta, index) {
+  const proceso = ruta.Descripcion_CT || ruta.Descripcion_CR || 'Proceso de ruta';
+  const codigos = `${ruta.CT || 'Sin CT'} / ${ruta.CR || 'Sin CR'}`;
+  return `
+    <label class="route-pdf-process-option">
+      <input class="route-pdf-process-check" type="checkbox" value="${index}" checked
+        onchange="actualizarConteoProcesosHojaViajera()">
+      <span class="route-type-icon route-type-route">RT</span>
+      <span class="route-pdf-process-number">${index + 1}</span>
+      <span class="route-pdf-process-info">
+        <strong>${escapeHtml(proceso)}</strong>
+        <span>${escapeHtml(codigos)}</span>
+        <small>${escapeHtml(ruta.jerarquia || 'Ruta de trabajo')}</small>
+      </span>
+    </label>
+  `;
+}
+
+function seleccionarProcesosHojaViajera(seleccionar) {
+  document.querySelectorAll('#routePdfProcessModal .route-pdf-process-check').forEach(checkbox => {
+    checkbox.checked = Boolean(seleccionar);
+  });
+  actualizarConteoProcesosHojaViajera();
+}
+
+function actualizarConteoProcesosHojaViajera() {
+  const checkboxes = [...document.querySelectorAll('#routePdfProcessModal .route-pdf-process-check')];
+  const seleccionados = checkboxes.filter(checkbox => checkbox.checked).length;
+  const contador = document.getElementById('routePdfSelectionCount');
+  const mensaje = document.getElementById('routePdfSelectionMessage');
+  const boton = document.getElementById('routePdfGenerateButton');
+
+  if (contador) contador.textContent = `${seleccionados} de ${checkboxes.length} procesos`;
+  if (mensaje && seleccionados > 0) mensaje.textContent = '';
+  if (boton) boton.disabled = seleccionados === 0;
+}
+
+function cerrarSelectorProcesosHojaViajera() {
+  document.getElementById('routePdfProcessModal')?.remove();
+  rutaTrabajoSeleccionPdf = null;
+}
+
+async function generarHojaViajeraSeleccionada() {
+  const seleccion = rutaTrabajoSeleccionPdf;
+  if (!seleccion) return;
+
+  const indices = [...document.querySelectorAll('#routePdfProcessModal .route-pdf-process-check:checked')]
+    .map(checkbox => Number(checkbox.value))
+    .filter(index => Number.isInteger(index) && seleccion.rutas[index]);
+  const mensaje = document.getElementById('routePdfSelectionMessage');
+
+  if (!indices.length) {
+    if (mensaje) mensaje.textContent = 'Selecciona al menos un proceso para generar la hoja viajera.';
+    return;
+  }
+
+  const datosEncabezado = obtenerDatosEncabezadoHojaViajera();
+  if (!datosEncabezado) return;
+
+  const boton = document.getElementById('routePdfGenerateButton');
+  if (boton) {
+    boton.disabled = true;
+    boton.textContent = 'Generando...';
+  }
+
+  try {
+    const rutasSeleccionadas = indices.map(index => seleccion.rutas[index]);
+    const pdfBytes = await construirPdfFormatoTiemposRutasTrabajo(
+      seleccion.articulo,
+      seleccion.nodos,
+      rutasSeleccionadas,
+      datosEncabezado
+    );
+    const nombreArchivo = `hoja-viajera-${limpiarNombreArchivoRuta(seleccion.articulo['Codigo SAP'] || 'articulo')}.pdf`;
+    descargarArchivoRuta(nombreArchivo, pdfBytes, 'application/pdf');
+    cerrarSelectorProcesosHojaViajera();
+    setRutaTrabajoStatus('Hoja viajera PDF descargada.');
+  } catch (error) {
+    setRutaTrabajoStatus('No se pudo generar el PDF: ' + error.message);
+    if (mensaje) mensaje.textContent = 'No se pudo generar el PDF. Intenta nuevamente.';
+    if (boton) {
+      boton.disabled = false;
+      boton.textContent = 'Generar PDF';
+    }
+  }
+}
+
+function obtenerDatosEncabezadoHojaViajera() {
+  const campos = [
+    ['orden', 'routePdfOrden', true],
+    ['lote', 'routePdfLote', true],
+    ['cantidad', 'routePdfCantidad', true],
+    ['turno', 'routePdfTurno', true],
+    ['fechaInicio', 'routePdfFechaInicio', false],
+    ['fechaTermino', 'routePdfFechaTermino', false],
+    ['responsable', 'routePdfResponsable', false]
+  ];
+  const datos = {};
+  let primerCampoVacio = null;
+
+  campos.forEach(([clave, id, obligatorio]) => {
+    const input = document.getElementById(id);
+    const valor = input?.value.trim() || '';
+    const invalido = obligatorio && !valor;
+    datos[clave] = valor;
+    input?.classList.toggle('is-invalid', invalido);
+    if (invalido && !primerCampoVacio) primerCampoVacio = input;
+  });
+
+  if (primerCampoVacio) {
+    const mensaje = document.getElementById('routePdfSelectionMessage');
+    if (mensaje) mensaje.textContent = 'Completa orden, lote, cantidad y turno antes de generar el PDF.';
+    primerCampoVacio.focus();
+    return null;
+  }
+
+  return datos;
+}
+
 function construirExcelXmlDescargaRutasTrabajo(articulo, nodos) {
   const filas = [];
   agregarFilaExcelRuta(filas, [
@@ -1013,6 +1286,430 @@ function construirExcelXmlDescargaRutasTrabajo(articulo, nodos) {
   ];
 
   return lineas.join('\r\n');
+}
+
+async function construirPdfFormatoTiemposRutasTrabajo(articulo, nodos, rutasSeleccionadas = null, datosEncabezado = {}) {
+  const { PDFDocument, StandardFonts, rgb } = window.PDFLib;
+  const pdfDoc = await PDFDocument.create();
+  const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+  const bold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+  const colorTexto = rgb(0.02, 0.13, 0.25);
+  const colorLinea = rgb(0.56, 0.66, 0.76);
+  const colorHeader = rgb(0.88, 0.93, 0.97);
+  const colorAzul = rgb(0.04, 0.44, 0.82);
+  const colorSuave = rgb(0.96, 0.98, 1);
+  const rutas = Array.isArray(rutasSeleccionadas)
+    ? rutasSeleccionadas
+    : obtenerFilasFormatoTiemposRutasTrabajo(nodos);
+  const layout = {
+    width: 792,
+    height: 612,
+    margin: 24,
+    rowHeight: 56,
+    headerHeight: 146,
+    tableHeaderHeight: 28,
+    footerHeight: 42
+  };
+
+  let page = null;
+  let y = 0;
+  let pagina = 0;
+
+  function nuevaPagina() {
+    page = pdfDoc.addPage([layout.width, layout.height]);
+    pagina += 1;
+    y = layout.height - layout.margin;
+    dibujarEncabezadoFormatoTiemposPdf(page, {
+      articulo,
+      datosEncabezado,
+      pagina,
+      font,
+      bold,
+      colorTexto,
+      colorLinea,
+      colorAzul,
+      colorSuave,
+      layout
+    });
+    y -= layout.headerHeight;
+    dibujarCabeceraTablaFormatoTiemposPdf(page, {
+      y,
+      font,
+      bold,
+      colorTexto,
+      colorLinea,
+      colorHeader,
+      layout
+    });
+    y -= layout.tableHeaderHeight;
+  }
+
+  nuevaPagina();
+
+  rutas.forEach((ruta, index) => {
+    if (y - layout.rowHeight < layout.margin + layout.footerHeight) {
+      dibujarPieHojaViajeraPdf(page, { font, bold, colorTexto, colorLinea, layout });
+      nuevaPagina();
+    }
+
+    dibujarFilaFormatoTiemposPdf(page, {
+      ruta,
+      index: index + 1,
+      y,
+      font,
+      bold,
+      colorTexto,
+      colorLinea,
+      layout
+    });
+    y -= layout.rowHeight;
+  });
+
+  dibujarPieHojaViajeraPdf(page, { font, bold, colorTexto, colorLinea, layout });
+
+  return pdfDoc.save();
+}
+
+function dibujarEncabezadoFormatoTiemposPdf(page, ctx) {
+  const { articulo, datosEncabezado, pagina, font, bold, colorTexto, colorLinea, colorAzul, colorSuave, layout } = ctx;
+  const x = layout.margin;
+  const ancho = layout.width - (layout.margin * 2);
+  const top = layout.height - layout.margin;
+
+  page.drawRectangle({
+    x,
+    y: top - 34,
+    width: ancho,
+    height: 34,
+    color: colorAzul,
+    borderColor: colorAzul,
+    borderWidth: 0.8
+  });
+  page.drawText('HOJA VIAJERA DE PROCESOS', {
+    x: x + 12,
+    y: top - 22,
+    size: 15,
+    font: bold,
+    color: rgbPdfBlanco()
+  });
+  page.drawText('RUTAS DE TRABAJO', {
+    x: layout.width - layout.margin - 142,
+    y: top - 13,
+    size: 7.5,
+    font: bold,
+    color: rgbPdfBlanco()
+  });
+  page.drawText(`PAGINA ${pagina}`, {
+    x: layout.width - layout.margin - 142,
+    y: top - 25,
+    size: 8,
+    font,
+    color: rgbPdfBlanco()
+  });
+
+  page.drawRectangle({
+    x,
+    y: top - 82,
+    width: ancho,
+    height: 42,
+    color: colorSuave,
+    borderColor: colorLinea,
+    borderWidth: 0.7
+  });
+  dibujarEtiquetaValorPdf(page, 'CODIGO DEL ARTICULO', articulo['Codigo SAP'] || '-', x + 10, top - 54, 145, font, bold, colorTexto);
+  dibujarEtiquetaValorPdf(page, 'DESCRIPCION', articulo['Nombre SAP'] || '-', x + 175, top - 54, ancho - 185, font, bold, colorTexto);
+
+  const yCaptura1 = top - 101;
+  const yCaptura2 = top - 126;
+  dibujarLineaCapturaPdf(page, 'ORDEN', x, yCaptura1, 154, font, bold, colorTexto, colorLinea, datosEncabezado.orden);
+  dibujarLineaCapturaPdf(page, 'LOTE', x + 174, yCaptura1, 140, font, bold, colorTexto, colorLinea, datosEncabezado.lote);
+  dibujarLineaCapturaPdf(page, 'CANTIDAD', x + 334, yCaptura1, 168, font, bold, colorTexto, colorLinea, datosEncabezado.cantidad);
+  dibujarLineaCapturaPdf(page, 'TURNO', x + 522, yCaptura1, 120, font, bold, colorTexto, colorLinea, datosEncabezado.turno);
+  dibujarLineaCapturaPdf(page, 'FECHA INICIO', x, yCaptura2, 206, font, bold, colorTexto, colorLinea, formatearFechaHojaViajera(datosEncabezado.fechaInicio));
+  dibujarLineaCapturaPdf(page, 'FECHA TERMINO', x + 226, yCaptura2, 206, font, bold, colorTexto, colorLinea, formatearFechaHojaViajera(datosEncabezado.fechaTermino));
+  dibujarLineaCapturaPdf(page, 'RESPONSABLE', x + 452, yCaptura2, 292, font, bold, colorTexto, colorLinea, datosEncabezado.responsable);
+}
+
+function dibujarCabeceraTablaFormatoTiemposPdf(page, ctx) {
+  const { y, font, bold, colorTexto, colorLinea, colorHeader, layout } = ctx;
+  const x = layout.margin;
+  const ancho = layout.width - (layout.margin * 2);
+  const columnas = obtenerColumnasHojaViajeraPdf(x);
+
+  page.drawRectangle({
+    x,
+    y: y - layout.tableHeaderHeight,
+    width: ancho,
+    height: layout.tableHeaderHeight,
+    color: colorHeader,
+    borderColor: colorLinea,
+    borderWidth: 0.6
+  });
+
+  columnas.forEach(columna => {
+    dibujarTextoEnLineasPdf(page, columna.titulo, columna.x + 4, y - 10, columna.ancho - 8, 6.4, bold, colorTexto, 2, 8);
+    page.drawLine({
+      start: { x: columna.x, y: y },
+      end: { x: columna.x, y: y - layout.tableHeaderHeight },
+      thickness: 0.45,
+      color: colorLinea
+    });
+  });
+}
+
+function dibujarFilaFormatoTiemposPdf(page, ctx) {
+  const { ruta, index, y, font, bold, colorTexto, colorLinea, layout } = ctx;
+  const x = layout.margin;
+  const ancho = layout.width - (layout.margin * 2);
+  const rowTop = y;
+  const rowBottom = y - layout.rowHeight;
+  const columnas = obtenerColumnasHojaViajeraPdf(x);
+
+  page.drawRectangle({
+    x,
+    y: rowBottom,
+    width: ancho,
+    height: layout.rowHeight,
+    borderColor: colorLinea,
+    borderWidth: 0.45
+  });
+
+  columnas.forEach(columna => {
+    page.drawLine({
+      start: { x: columna.x, y: rowTop },
+      end: { x: columna.x, y: rowBottom },
+      thickness: 0.45,
+      color: colorLinea
+    });
+  });
+
+  dibujarTextoCentradoPdf(page, String(index), columnas[0], rowTop - 31, 8, bold, colorTexto);
+
+  const proceso = ruta.Descripcion_CT || ruta.Descripcion_CR || 'Proceso de ruta';
+  dibujarTextoEnLineasPdf(page, proceso, columnas[1].x + 5, rowTop - 12, columnas[1].ancho - 10, 7.4, bold, colorTexto, 1, 9);
+  dibujarTextoEnLineasPdf(page, `Trabajo: ${ruta.productoTrabajo || 'Producto padre'}`, columnas[1].x + 5, rowTop - 27, columnas[1].ancho - 10, 6.2, font, colorTexto, 2, 7);
+  dibujarTextoEnLineasPdf(page, `Ruta ${ruta.Nivel || index}`, columnas[1].x + 5, rowBottom + 6, columnas[1].ancho - 10, 5.6, font, colorTexto, 1, 7);
+
+  [2, 3, 4, 5].forEach(indice => {
+    const columna = columnas[indice];
+    page.drawLine({
+      start: { x: columna.x + 6, y: rowBottom + 17 },
+      end: { x: columna.x + columna.ancho - 6, y: rowBottom + 17 },
+      thickness: 0.5,
+      color: colorLinea
+    });
+  });
+
+  const trabajador = columnas[6];
+  page.drawLine({
+    start: { x: trabajador.x + 42, y: rowBottom + 36 },
+    end: { x: trabajador.x + trabajador.ancho - 7, y: rowBottom + 36 },
+    thickness: 0.5,
+    color: colorLinea
+  });
+  page.drawText('Codigo', {
+    x: trabajador.x + 7,
+    y: rowBottom + 34,
+    size: 5.5,
+    font,
+    color: colorTexto
+  });
+  page.drawLine({
+    start: { x: trabajador.x + 42, y: rowBottom + 16 },
+    end: { x: trabajador.x + trabajador.ancho - 7, y: rowBottom + 16 },
+    thickness: 0.5,
+    color: colorLinea
+  });
+  page.drawText('Nombre', {
+    x: trabajador.x + 7,
+    y: rowBottom + 14,
+    size: 5.5,
+    font,
+    color: colorTexto
+  });
+}
+
+function obtenerColumnasHojaViajeraPdf(x) {
+  const definiciones = [
+    ['#', 24],
+    ['PROCESO / RUTA', 250],
+    ['INICIO', 80],
+    ['FIN', 80],
+    ['CANT.\nBUENA', 68],
+    ['RECHAZO', 68],
+    ['CODIGO Y NOMBRE\nDEL TRABAJADOR', 174]
+  ];
+  let cursor = x;
+
+  return definiciones.map(([titulo, ancho]) => {
+    const columna = { titulo, x: cursor, ancho };
+    cursor += ancho;
+    return columna;
+  });
+}
+
+function dibujarPieHojaViajeraPdf(page, ctx) {
+  const { font, bold, colorTexto, colorLinea, layout } = ctx;
+  const x = layout.margin;
+  const y = layout.margin + 6;
+  const ancho = layout.width - (layout.margin * 2);
+
+  page.drawLine({
+    start: { x, y: y + 38 },
+    end: { x: x + ancho, y: y + 38 },
+    thickness: 0.65,
+    color: colorLinea
+  });
+  dibujarLineaCapturaPdf(page, 'RECIBIDO', x, y + 25, 220, font, bold, colorTexto, colorLinea);
+  dibujarLineaCapturaPdf(page, 'FECHA', x, y + 7, 220, font, bold, colorTexto, colorLinea);
+  dibujarLineaCapturaPdf(page, 'OBSERVACIONES', x + 250, y + 25, ancho - 250, font, bold, colorTexto, colorLinea);
+  page.drawLine({
+    start: { x: x + 250, y: y + 5 },
+    end: { x: x + ancho, y: y + 5 },
+    thickness: 0.7,
+    color: colorLinea
+  });
+}
+
+function dibujarEtiquetaValorPdf(page, etiqueta, valor, x, y, ancho, font, bold, colorTexto) {
+  page.drawText(etiqueta, { x, y, size: 7.5, font: bold, color: colorTexto });
+  dibujarTextoCortadoPdf(page, valor, x, y - 13, ancho, 9, font, colorTexto);
+}
+
+function dibujarLineaCapturaPdf(page, etiqueta, x, y, ancho, font, bold, colorTexto, colorLinea, valor = '') {
+  page.drawText(etiqueta, { x, y, size: 7.5, font: bold, color: colorTexto });
+  const inicioLinea = x + bold.widthOfTextAtSize(etiqueta, 7.5) + 8;
+  page.drawLine({
+    start: { x: Math.min(inicioLinea, x + ancho - 12), y: y - 2 },
+    end: { x: x + ancho, y: y - 2 },
+    thickness: 0.7,
+    color: colorLinea
+  });
+  if (valor) {
+    dibujarTextoCortadoPdf(
+      page,
+      valor,
+      Math.min(inicioLinea + 3, x + ancho - 10),
+      y,
+      Math.max(8, (x + ancho) - inicioLinea - 6),
+      7.5,
+      font,
+      colorTexto
+    );
+  }
+}
+
+function formatearFechaHojaViajera(valor) {
+  const partes = String(valor || '').split('-');
+  return partes.length === 3 ? `${partes[2]}/${partes[1]}/${partes[0]}` : String(valor || '');
+}
+
+function dibujarTextoCortadoPdf(page, texto, x, y, ancho, size, font, color) {
+  const valor = String(texto ?? '');
+  let salida = valor;
+
+  while (salida.length > 0 && font.widthOfTextAtSize(salida, size) > ancho) {
+    salida = salida.slice(0, -1);
+  }
+
+  if (salida.length < valor.length && salida.length > 3) {
+    salida = salida.slice(0, -3) + '...';
+  }
+
+  page.drawText(salida, { x, y, size, font, color });
+}
+
+function dibujarTextoEnLineasPdf(page, texto, x, y, ancho, size, font, color, maxLineas = 2, interlineado = 9) {
+  const palabras = String(texto ?? '').replace(/\s+/g, ' ').trim().split(' ').filter(Boolean);
+  const lineas = [];
+  let linea = '';
+
+  palabras.forEach(palabra => {
+    const candidata = linea ? `${linea} ${palabra}` : palabra;
+    if (!linea || font.widthOfTextAtSize(candidata, size) <= ancho) {
+      linea = candidata;
+      return;
+    }
+    lineas.push(linea);
+    linea = palabra;
+  });
+  if (linea) lineas.push(linea);
+
+  const visibles = lineas.slice(0, maxLineas);
+  if (lineas.length > maxLineas && visibles.length) {
+    const ultima = visibles.length - 1;
+    let truncada = visibles[ultima];
+    while (truncada.length && font.widthOfTextAtSize(`${truncada}...`, size) > ancho) {
+      truncada = truncada.slice(0, -1);
+    }
+    visibles[ultima] = `${truncada.trim()}...`;
+  }
+
+  visibles.forEach((valor, indice) => {
+    page.drawText(valor, { x, y: y - (indice * interlineado), size, font, color });
+  });
+}
+
+function dibujarTextoCentradoPdf(page, texto, columna, y, size, font, color) {
+  const valor = String(texto ?? '');
+  const anchoTexto = font.widthOfTextAtSize(valor, size);
+  const x = columna.x + Math.max(4, (columna.ancho - anchoTexto) / 2);
+  dibujarTextoCortadoPdf(page, valor, x, y, columna.ancho - 8, size, font, color);
+}
+
+function rgbPdfBlanco() {
+  return window.PDFLib.rgb(1, 1, 1);
+}
+
+function obtenerFilasFormatoTiemposRutasTrabajo(nodos) {
+  const filas = [];
+
+  function recorrer(lista, rutaPadres = [], productoTrabajo = '') {
+    (lista || []).forEach(nodo => {
+      const etiqueta = obtenerEtiquetaNodoFormatoTiempos(nodo);
+      const nuevaRuta = etiqueta ? [...rutaPadres, etiqueta] : rutaPadres;
+      const productoActual = nodo.tipo === 'HIJO' ? etiqueta : productoTrabajo;
+
+      if (nodo.tipo === 'RUTA') {
+        filas.push({
+          ...nodo,
+          jerarquia: nuevaRuta.join(' > '),
+          productoTrabajo: productoActual
+        });
+      }
+
+      recorrer(nodo.children || [], nuevaRuta, productoActual);
+    });
+  }
+
+  recorrer(nodos);
+  return filas;
+}
+
+function obtenerEtiquetaNodoFormatoTiempos(nodo) {
+  if (!nodo) return '';
+
+  if (nodo.tipo === 'HIJO') {
+    const codigo = nodo.Codigo ? ` - ${nodo.Codigo}` : '';
+    const descripcion = nodo.Descripcion ? ` - ${nodo.Descripcion}` : '';
+    return `Hijo ${nodo.Nivel || ''}${codigo}${descripcion}`.trim();
+  }
+
+  if (nodo.tipo === 'RUTA') {
+    return `Ruta ${nodo.Nivel || ''}`.trim();
+  }
+
+  if (nodo.tipo === 'MATERIA_PRIMA') {
+    return `MP ${nodo.Nivel || ''}${nodo.Codigo ? ` - ${nodo.Codigo}` : ''}`.trim();
+  }
+
+  return '';
+}
+
+function arbolTrabajoTieneRutas(nodos) {
+  return (nodos || []).some(nodo => (
+    nodo.tipo === 'RUTA' || arbolTrabajoTieneRutas(nodo.children || [])
+  ));
 }
 
 function agregarNodoExcelDescargaRutasTrabajo(filas, nodo, profundidad) {

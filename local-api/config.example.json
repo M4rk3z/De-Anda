@@ -1,0 +1,10 @@
+{
+  "port": 3001,
+  "postgres": {
+    "host": "127.0.0.1",
+    "port": 5432,
+    "database": "de_anda_local",
+    "user": "postgres",
+    "password": "CAMBIA_ESTA_PASSWORD"
+  }
+}

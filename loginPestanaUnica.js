@@ -329,8 +329,53 @@ function entrarAlSistema() {
   }
 }
 
+function mostrarAvisoAccesoLocal() {
+  document.getElementById('sessionAccessNotice')?.remove();
+
+  const overlay = document.createElement('div');
+  overlay.id = 'sessionAccessNotice';
+  overlay.className = 'session-notice-overlay';
+  overlay.setAttribute('role', 'presentation');
+  overlay.innerHTML = `
+    <section class="session-notice-dialog" role="dialog" aria-modal="true"
+      aria-labelledby="sessionNoticeTitle" tabindex="-1">
+      <header class="session-notice-header">
+        <span class="session-notice-mark" aria-hidden="true">!</span>
+        <div>
+          <span class="session-notice-kicker">Aviso importante</span>
+          <h2 id="sessionNoticeTitle">Atención</h2>
+        </div>
+      </header>
+
+      <div class="session-notice-content">
+        <p>A partir del <strong>21 de septiembre</strong> se deberá acceder a Index De Anda de manera local mediante el siguiente enlace:</p>
+        <a class="session-notice-link" href="http://192.168.0.96/index/" target="_blank" rel="noopener noreferrer">
+          192.168.0.96/index/
+        </a>
+        <p>Accede desde tu navegador.</p>
+        <p class="session-notice-signature">Gracias por su apoyo<br><strong>Dpto. IT de Anda</strong></p>
+      </div>
+
+      <footer class="session-notice-actions">
+        <button type="button" onclick="cerrarAvisoAccesoLocal()">Entendido</button>
+      </footer>
+    </section>
+  `;
+  overlay.onkeydown = event => {
+    if (event.key === 'Escape') cerrarAvisoAccesoLocal();
+  };
+
+  document.body.appendChild(overlay);
+  overlay.querySelector('.session-notice-dialog')?.focus();
+}
+
+function cerrarAvisoAccesoLocal() {
+  document.getElementById('sessionAccessNotice')?.remove();
+}
+
 function cerrarSesion() {
   liberarBloqueoDeSesion();
+  cerrarAvisoAccesoLocal();
 
   localStorage.removeItem('sesionActiva');
   localStorage.removeItem('usuarioActivo');
